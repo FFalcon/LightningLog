@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TabContent</class>
+ <widget class="QWidget" name="TabContent">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>753</width>
+    <height>545</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <property name="leftMargin">
+    <number>2</number>
+   </property>
+   <property name="topMargin">
+    <number>2</number>
+   </property>
+   <property name="rightMargin">
+    <number>2</number>
+   </property>
+   <property name="bottomMargin">
+    <number>2</number>
+   </property>
+   <item row="0" column="0">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>1</number>
+     </property>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QLineEdit" name="lineEdit">
+         <property name="styleSheet">
+          <string notr="true">QLineEdit {
+    border: 1px solid #1f314d;
+    border-radius: 2px;
+    padding: 2px;
+    selection-background-color: #444444;
+}</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="isolateSelection">
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+    border: 1px solid #3970c4;
+    border-radius: 2px;
+	color: #FFF;
+    background-color: #1a3e75;
+	padding: 3px 2px;
+}
+
+QPushButton:pressed {
+    background-color: #3970c4;
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}</string>
+         </property>
+         <property name="text">
+          <string>Isolate</string>
+         </property>
+         <property name="icon">
+          <iconset theme="SP_FileLinkIcon">
+           <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="shortcut">
+          <string>Ctrl+I</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="scrollToBottom">
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+    border: 1px solid #3970c4;
+    border-radius: 2px;
+	color: #FFF;
+    background-color: #1a3e75;
+	padding: 3px 2px;
+}
+
+QPushButton:pressed {
+    background-color: #3970c4;
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}</string>
+         </property>
+         <property name="text">
+          <string>ScrollToBottom</string>
+         </property>
+         <property name="shortcut">
+          <string>Ctrl+T</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QTableView" name="logEntries"/>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
