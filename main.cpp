@@ -4,8 +4,9 @@
 
 int main(int argc, char *argv[]) {
   QApplication a(argc, argv);
+  a.setWindowIcon(QIcon(":/icons/icon.png"));
 
-  QCoreApplication::setApplicationName("Log Lightning");
+  QCoreApplication::setApplicationName("Lightning Log");
   QCoreApplication::setApplicationVersion("0.1.0-Alpha");
 
   MainWindow w;

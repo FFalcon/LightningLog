@@ -2,12 +2,14 @@
 #define MAINWINDOW_H
 
 #include "options.h"
+#include <iostream>
 #include <QDebug>
 #include <QDropEvent>
+#include <QLabel>
 #include <QMainWindow>
 #include <QMimeData>
+#include <QProgressBar>
 #include <QSettings>
-#include <iostream>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -42,11 +44,15 @@ private slots:
   void on_actionExit_triggered();
   void on_actionOptions_triggered();
 
-signals:
+  void on_actionAbout_triggered();
+
+  signals:
   void settingsChanged(std::shared_ptr<Settings> global_settings);
 
 private:
   Ui::MainWindow *ui;
+  QProgressBar *progressBar;
+  QLabel *label;
   std::shared_ptr<Settings> global_settings;
   std::unordered_map<unsigned int, std::unique_ptr<QWidget>> pages;
 };

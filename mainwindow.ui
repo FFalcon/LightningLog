@@ -23,7 +23,7 @@
    <bool>true</bool>
   </property>
   <property name="windowTitle">
-   <string>Log Lightning</string>
+   <string>Lightning Log</string>
   </property>
   <property name="styleSheet">
    <string notr="true">* {
@@ -33,19 +33,22 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <property name="leftMargin">
-     <number>2</number>
+     <number>0</number>
     </property>
     <property name="topMargin">
-     <number>2</number>
+     <number>0</number>
     </property>
     <property name="rightMargin">
-     <number>2</number>
+     <number>0</number>
     </property>
     <property name="bottomMargin">
-     <number>2</number>
+     <number>0</number>
     </property>
     <item row="0" column="0">
      <layout class="QVBoxLayout" name="windowVerticalBox">
+      <property name="spacing">
+       <number>0</number>
+      </property>
       <item>
        <widget class="QTabWidget" name="fileViewTabWidget">
         <property name="acceptDrops">
@@ -54,14 +57,39 @@
         <property name="styleSheet">
          <string notr="true"/>
         </property>
+        <property name="tabShape">
+         <enum>QTabWidget::Rounded</enum>
+        </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
+        </property>
+        <property name="tabsClosable">
+         <bool>true</bool>
+        </property>
+        <property name="movable">
+         <bool>true</bool>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
           <string>Tab 1</string>
          </attribute>
-         <layout class="QGridLayout" name="gridLayout_2"/>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <property name="spacing">
+           <number>0</number>
+          </property>
+         </layout>
         </widget>
         <widget class="QWidget" name="tab_2">
          <attribute name="title">
@@ -117,8 +145,15 @@ QMenuBar::item:pressed {
     </property>
     <addaction name="actionOptions"/>
    </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>?</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTools"/>
+   <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen">
@@ -140,6 +175,11 @@ QMenuBar::item:pressed {
   <action name="actionOptions">
    <property name="text">
     <string>Options</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
    </property>
   </action>
  </widget>

@@ -1,38 +1,57 @@
-#include "QFileDialog"
 #include "mainwindow.h"
+#include "QFileDialog"
+#include "aboutdialog.h"
 #include "tabcontent.h"
 #include "ui_mainwindow.h"
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow),
-      global_settings(std::make_shared<Settings>()) {
-  ui->setupUi(this);
-  ui->fileViewTabWidget->clear();
-  ui->fileViewTabWidget->setTabsClosable(true);
-  connect(ui->fileViewTabWidget, &QTabWidget::tabCloseRequested,
-          [&](int index) {
-            qDebug() << ui->fileViewTabWidget->count();
-            auto deletedWidget = ui->fileViewTabWidget->widget(index);
-            if (deletedWidget != nullptr) {
-              delete deletedWidget;
-              deletedWidget = nullptr;
-            }
-            if (pages.find(index) != pages.end()) {
-              auto ptr = std::move(pages[index]);
-              pages.erase(index);
-            }
-          });
-  readSettings();
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), global_settings(std::make_shared<Settings>())
+{
+    ui->setupUi(this);
+    progressBar = new QProgressBar(ui->statusbar);
+    progressBar->setHidden(true);
+    progressBar->setRange(0, 0);
+    ui->statusbar->addPermanentWidget(progressBar);
+
+    label = new QLabel(ui->statusbar);
+    label->setHidden(true);
+    ui->statusbar->addWidget(label);
+
+    ui->fileViewTabWidget->clear();
+    ui->fileViewTabWidget->setTabsClosable(true);
+    connect(ui->fileViewTabWidget, &QTabWidget::tabCloseRequested, [&](int index) {
+        if (pages.find(index) != pages.end()) {
+            auto ptr = std::move(pages[index]);
+            auto tab = (TabContent *) ptr.get();
+            tab->loadProgressed(100);
+            pages.erase(index);
+        }
+    });
+    readSettings();
 }
 
 void MainWindow::loadFile(std::string filename) {
   qDebug() << "Loading file: " << QString::fromStdString(filename);
   auto tabContent = std::make_unique<TabContent>(this, global_settings);
   tabContent->setContent(filename);
+  connect(tabContent.get(), &TabContent::loadProgressed, [=](int progress) {
+      if (progress < 99) {
+          ui->statusbar->showMessage(QString("Loading File: ") + QString::fromStdString(filename), 1000);
+          progressBar->show();
+          progressBar->setRange(0, 100);
+          progressBar->setValue(progress);
+      } else {
+          progressBar->hide();
+      }
+  });
   addTab(std::move(tabContent), filename);
 }
 
-MainWindow::~MainWindow() { delete ui; }
+MainWindow::~MainWindow()
+{
+    delete label;
+    delete progressBar;
+    delete ui;
+}
 
 void MainWindow::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
@@ -57,39 +76,36 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event) {
   event->acceptProposedAction();
 }
 
-void MainWindow::readSettings() {
-  QSettings settings(QCoreApplication::applicationDirPath() +
-                         "loglightning.conf",
-                     QSettings::IniFormat);
+void MainWindow::readSettings()
+{
+    QSettings settings(QCoreApplication::applicationDirPath() + "lightninglog.conf", QSettings::IniFormat);
 
-  settings.beginGroup("NormalMode");
-  QMap<QString, FilterOptions> *normalModeFilterMap =
-      new QMap<QString, FilterOptions>();
-  auto nitems = settings.value("nitems").value<int>();
-  for (auto i = 0; i < nitems; i++) {
-    QString raw_entry =
-        settings.value(QString("item") + QString(i)).value<QString>();
-    auto entry_splits = raw_entry.split("|");
-    if (entry_splits.size() != 6)
-      continue;
-    auto filter_kv = entry_splits.at(0).split("=");
-    auto front_kv = entry_splits.at(1).split("=");
-    auto back_kv = entry_splits.at(2).split("=");
-    auto bold_kv = entry_splits.at(3).split("=");
-    auto italic_kv = entry_splits.at(4).split("=");
-    auto caseSensitive_kv = entry_splits.at(5).split("=");
-    FilterOptions filterOptions{
-        .frontColor = QColor(front_kv.at(1)),
-        .backColor = QColor(back_kv.at(1)),
-        .isBold = bold_kv.at(1) == "true",
-        .isItalic = italic_kv.at(1) == "true",
-        .isCaseInsensitive = caseSensitive_kv.at(1) == "false",
-    };
-    normalModeFilterMap->insert(filter_kv.at(1), filterOptions);
-  }
-  settings.endGroup();
-  global_settings->setNormalModeFilters(normalModeFilterMap);
-  emit settingsChanged(global_settings);
+    settings.beginGroup("NormalMode");
+    QMap<QString, FilterOptions> *normalModeFilterMap = new QMap<QString, FilterOptions>();
+    auto nitems = settings.value("nitems").value<int>();
+    for (auto i = 0; i < nitems; i++) {
+        QString raw_entry = settings.value(QString("item") + QString(i)).value<QString>();
+        auto entry_splits = raw_entry.split("|");
+        if (entry_splits.size() != 6)
+            continue;
+        auto filter_kv = entry_splits.at(0).split("=");
+        auto front_kv = entry_splits.at(1).split("=");
+        auto back_kv = entry_splits.at(2).split("=");
+        auto bold_kv = entry_splits.at(3).split("=");
+        auto italic_kv = entry_splits.at(4).split("=");
+        auto caseSensitive_kv = entry_splits.at(5).split("=");
+        FilterOptions filterOptions{
+            .frontColor = QColor(front_kv.at(1)),
+            .backColor = QColor(back_kv.at(1)),
+            .isBold = bold_kv.at(1) == "true",
+            .isItalic = italic_kv.at(1) == "true",
+            .isCaseInsensitive = caseSensitive_kv.at(1) == "false",
+        };
+        normalModeFilterMap->insert(filter_kv.at(1), filterOptions);
+    }
+    settings.endGroup();
+    global_settings->setNormalModeFilters(normalModeFilterMap);
+    emit settingsChanged(global_settings);
 }
 
 void MainWindow::addTab(std::unique_ptr<QWidget> widget, std::string title,
@@ -103,13 +119,12 @@ void MainWindow::addTab(std::unique_ptr<QWidget> widget, std::string title,
   }
 }
 
-void MainWindow::writeSettings() {
-  QSettings settings(QCoreApplication::applicationDirPath() +
-                         "loglightning.conf",
-                     QSettings::IniFormat);
-  settings.beginGroup("NormalMode");
+void MainWindow::writeSettings()
+{
+    QSettings settings(QCoreApplication::applicationDirPath() + "lightninglog.conf", QSettings::IniFormat);
+    settings.beginGroup("NormalMode");
 
-  settings.endGroup();
+    settings.endGroup();
 }
 
 void MainWindow::on_actionOpen_triggered() {
@@ -132,4 +147,9 @@ void MainWindow::on_actionOptions_triggered() {
     readSettings();
   else
     qDebug() << "Setting edition cancelled";
+}
+
+void MainWindow::on_actionAbout_triggered()
+{
+    AboutDialog(this).exec();
 }

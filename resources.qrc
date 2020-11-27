@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/icon.png</file>
+        <file>icons/lightninglog.png</file>
+    </qresource>
+</RCC>

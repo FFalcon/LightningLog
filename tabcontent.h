@@ -43,8 +43,9 @@ signals:
   void scrollToBottomToggled(bool state);
   void isolateTaskDone(const QList<QStandardItem *> items);
   void contextTaskDone(const QList<QStandardItem *> items);
+  void loadProgressed(int signal);
 
-private:
+  private:
   Ui::TabContent *ui;
   std::unique_ptr<QStandardItemModel> model;
   std::unique_ptr<QSortFilterProxyModel> proxyModel;
@@ -55,8 +56,6 @@ private:
   bool scrollToBottom;
   MainWindow *parentWindow;
   std::shared_ptr<Settings> tabSettings;
-  // items
-  std::vector<QStandardItem *> items;
 };
 
 #endif // TABCONTENT_H

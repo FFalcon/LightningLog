@@ -26,8 +26,9 @@ signals:
   void initialLoadFinished();
   void newItemCreated(QStandardItem *item);
   void fileWillReload();
+  void loadProgressed(int progress);
 
-private:
+  private:
   bool initial_load = true;
   std::string filename;
   std::atomic_bool &cancellation_token;
