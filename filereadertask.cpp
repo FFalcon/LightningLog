@@ -18,7 +18,7 @@ bool FileReaderTask::fileChanged(std::streampos posg)
     if (fs.is_open()) {
         fs.seekg(0, std::ios::end);
         auto eof = fs.tellg();
-        if (posg != eof)
+        if (posg > eof)
             return true;
         return false;
     }

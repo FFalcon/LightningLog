@@ -1,11 +1,11 @@
+#include "tabcontent.h"
 #include "contextwindow.h"
 #include "filereadertask.h"
 #include "mainwindow.h"
-#include "tabcontent.h"
 #include "ui_tabcontent.h"
-#include <QThreadPool>
 #include <fstream>
 #include <iostream>
+#include <QThreadPool>
 
 void TabContent::createConnections()
 {
@@ -198,6 +198,7 @@ void TabContent::initViewer()
     ui->logEntries->setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);
     ui->logEntries->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerItem);
     ui->logEntries->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    //    ui->logEntries->setItemDelegate(new CustomDisplayDelegate);
 
     auto scroll_func = [](QAbstractItemView *listView, const bool &scrollToBottom, std::atomic_bool &cancellation_token) {
         while (!cancellation_token) {

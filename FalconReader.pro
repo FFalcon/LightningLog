@@ -14,6 +14,7 @@ QMAKE_LFLAGS += -static -static-libgcc -static-libstdc++ -lpthread
 SOURCES += \
     aboutdialog.cpp \
     contextwindow.cpp \
+    customdisplaydelegate.cpp \
     filereadertask.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
 HEADERS += \
     aboutdialog.h \
     contextwindow.h \
+    customdisplaydelegate.h \
     filereadertask.h \
     mainwindow.h \
     options.h \

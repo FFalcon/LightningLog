@@ -1,12 +1,13 @@
 #ifndef TABCONTENT_H
 #define TABCONTENT_H
 
+#include "customdisplaydelegate.h"
 #include "mainwindow.h"
+#include <thread>
 #include <QScrollBar>
 #include <QSortFilterProxyModel>
 #include <QStandardItemModel>
 #include <QWidget>
-#include <thread>
 
 namespace Ui {
 class TabContent;

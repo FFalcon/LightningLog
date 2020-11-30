@@ -603,7 +603,7 @@ QHeaderView::section:checked {
 
 /* =============================================== */
 /* QTableWidget                                    */
-/* =============================================== */
+/* =============================================== *
 QTableWidget, QTableView
 {
     gridline-color: #353535;
@@ -636,7 +636,7 @@ QTableWidget QComboBox{
     margin: 2px;
     border: none;
 }
-</string>
+*/</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
