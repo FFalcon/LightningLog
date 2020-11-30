@@ -27,7 +27,8 @@ HEADERS += \
     mainwindow.h \
     options.h \
     settings.h \
-    tabcontent.h
+    tabcontent.h \
+    version.h
 
 FORMS += \
     aboutdialog.ui \
@@ -43,3 +44,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     resources.qrc
+
+RC_FILE = resources.rc

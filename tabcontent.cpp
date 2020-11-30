@@ -11,43 +11,42 @@ void TabContent::createConnections()
 {
     connect(parentWindow, &MainWindow::settingsChanged, this, &TabContent::settingsChanged);
 
-    connect(ui->logEntries->verticalScrollBar(), &QScrollBar::actionTriggered, [=]() {
-        if (scrollToBottom)
-            this->on_scrollToBottom_toggled(false);
+    connect(ui->logEntries->verticalScrollBar(), &QScrollBar::actionTriggered, [&]() {
+        auto isAtBottom = ui->logEntries->verticalScrollBar()->sliderPosition() == ui->logEntries->verticalScrollBar()->maximum();
+        if (!isAtBottom && scrollToBottom)
+            on_scrollToBottom_toggled(false);
+        if (isAtBottom && !scrollToBottom)
+            on_scrollToBottom_toggled(true);
     });
 
-    connect(this, &TabContent::scrollToBottomToggled, [=](bool state) {
+    connect(this, &TabContent::scrollToBottomToggled, [&](bool state) {
         if (state != ui->scrollToBottom->isChecked()) {
-            ui->scrollToBottom->toggle();
+            ui->scrollToBottom->setChecked(state);
         }
     });
 
     connect(this, &TabContent::isolateTaskDone, this, &TabContent::createIsolateTab);
-    connect(ui->logEntries, &QTableView::doubleClicked, this, &TabContent::on_listView_doubleClicked);
+    connect(ui->logEntries, &QTableView::doubleClicked, this, &TabContent::logEntryDoubleClicked);
     connect(this, &TabContent::contextTaskDone, this, &TabContent::createContextView);
 }
 
 TabContent::TabContent(QWidget *parent, std::shared_ptr<Settings> _tabSettings)
-    : QWidget(parent), ui(new Ui::TabContent), cancellation_token(false), scrollToBottom(false), parentWindow((MainWindow *) parent), tabSettings(_tabSettings)
+    : QWidget(parent), ui(new Ui::TabContent), cancellation_token(false), scrollToBottom(false), view_initialized(false), parentWindow((MainWindow *) parent),
+      tabSettings(_tabSettings)
 {
     ui->setupUi(this);
-    model = std::make_unique<QStandardItemModel>();
-    proxyModel = std::make_unique<QSortFilterProxyModel>();
+    model = std::make_unique<QStandardItemModel>(this);
+    proxyModel = std::make_unique<QSortFilterProxyModel>(this);
     createConnections();
 }
 
 TabContent::TabContent(QWidget *parent, std::shared_ptr<Settings> _tabSettings, std::unique_ptr<QStandardItemModel> _model)
-    : QWidget(parent), ui(new Ui::TabContent), model(std::move(_model)), cancellation_token(false), scrollToBottom(false), parentWindow((MainWindow *) parent),
-      tabSettings(_tabSettings)
+    : QWidget(parent), ui(new Ui::TabContent), model(std::move(_model)), cancellation_token(false), scrollToBottom(false), view_initialized(false),
+      parentWindow((MainWindow *) parent), tabSettings(_tabSettings)
 {
     ui->setupUi(this);
     proxyModel = std::make_unique<QSortFilterProxyModel>(this);
-    proxyModel->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
-    proxyModel->setSourceModel(model.get());
-    ui->logEntries->setModel(proxyModel.get());
-    ui->logEntries->setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);
-    ui->logEntries->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerItem);
-    ui->logEntries->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    initViewer();
     createConnections();
 }
 
@@ -66,7 +65,7 @@ void TabContent::dropEvent(QDropEvent *event)
 
         // call a function to open the files
         for (const auto &path : pathList) {
-            parentWindow->loadFile(path.toStdString());
+            parentWindow->loadFile(path);
         }
     }
 }
@@ -76,25 +75,17 @@ void TabContent::dragEnterEvent(QDragEnterEvent *event)
     event->acceptProposedAction();
 }
 
-void TabContent::setContent(std::string content)
+void TabContent::setContent(QString content)
 {
-    auto file_reader_task = std::make_unique<FileReaderTask>(content, tabSettings, std::ref(cancellation_token));
+    filename = content;
+    auto file_reader_task = new FileReaderTask(content.toStdString(), tabSettings, std::ref(cancellation_token));
 
-    connect(file_reader_task.get(), &FileReaderTask::loadProgressed, this, &TabContent::loadProgressed);
-    connect(file_reader_task.get(), &FileReaderTask::initialLoadFinished, this, &TabContent::initViewer);
-    connect(file_reader_task.get(), &FileReaderTask::newItemCreated, [&](QStandardItem *item) { model->appendRow(item); });
-    connect(file_reader_task.get(), &FileReaderTask::fileWillReload, this, [&]() { model->clear(); });
+    connect(file_reader_task, &FileReaderTask::loadProgressed, this, &TabContent::loadProgressed);
+    connect(file_reader_task, &FileReaderTask::initialLoadFinished, this, &TabContent::initViewer);
+    connect(file_reader_task, &FileReaderTask::newItemCreated, [&](QStandardItem *item) { model->appendRow(item); });
+    connect(file_reader_task, &FileReaderTask::fileWillReload, [&]() { model->clear(); });
 
     loader_thread = std::thread(&FileReaderTask::run, std::move(file_reader_task));
-
-    auto scroll_func = [](QAbstractItemView *listView, const bool &scrollToBottom, std::atomic_bool &cancellation_token) {
-        while (!cancellation_token) {
-            if (scrollToBottom)
-                listView->scrollToBottom();
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        }
-    };
-    scroll_task = std::thread(scroll_func, ui->logEntries, std::ref(scrollToBottom), std::ref(cancellation_token));
 }
 
 TabContent::~TabContent()
@@ -110,7 +101,6 @@ TabContent::~TabContent()
             th.join();
     }
     parentWindow = nullptr;
-    // model->deleteLater();
 }
 
 void TabContent::on_lineEdit_returnPressed()
@@ -127,7 +117,7 @@ void TabContent::on_lineEdit_returnPressed()
 void TabContent::on_isolateSelection_clicked()
 {
     const auto isolate_func = [&]() {
-        auto items = QList<QStandardItem *>();
+        auto items = new QList<QStandardItem *>();
         for (auto i = 0; i < proxyModel->rowCount(); i++) {
             auto idx = proxyModel->index(i, 0);
             auto item = new QStandardItem();
@@ -135,20 +125,21 @@ void TabContent::on_isolateSelection_clicked()
             item->setData(proxyModel->data(idx, Qt::FontRole).value<QFont>(), Qt::FontRole);
             item->setForeground(proxyModel->data(idx, Qt::ForegroundRole).value<QBrush>());
             item->setBackground(proxyModel->data(idx, Qt::BackgroundRole).value<QBrush>());
-            items.append(item);
+            items->append(item);
         }
 
-        emit isolateTaskDone(std::move(items));
+        emit isolateTaskDone(items);
     };
     // start new one
     tasks.push_back(std::thread(isolate_func));
 }
 
-void TabContent::createIsolateTab(QList<QStandardItem *> items)
+void TabContent::createIsolateTab(const QList<QStandardItem *> *items)
 {
-    auto model = std::make_unique<QStandardItemModel>(this);
-    model->appendRow(items);
-    parentWindow->addTab(std::make_unique<TabContent>(parentWindow, tabSettings, std::move(model)), "Extract");
+    auto model = std::make_unique<QStandardItemModel>();
+    for (auto &item : *items)
+        model->appendRow(item);
+    parentWindow->addTab(std::make_unique<TabContent>(parentWindow, tabSettings, std::move(model)), filename.append(" Extract"));
 }
 
 void TabContent::on_scrollToBottom_toggled(bool checked)
@@ -159,10 +150,10 @@ void TabContent::on_scrollToBottom_toggled(bool checked)
     }
 }
 
-void TabContent::on_listView_doubleClicked(const QModelIndex &index)
+void TabContent::logEntryDoubleClicked(const QModelIndex &index)
 {
     const auto context_isolate_func = [&](const int numberOfRows) {
-        auto items = QList<QStandardItem *>();
+        auto items = new QList<QStandardItem *>();
         auto sourceIndex = proxyModel->mapToSource(index);
         auto startIndex = sourceIndex.row() - numberOfRows / 2;
         if (startIndex < 0)
@@ -170,18 +161,19 @@ void TabContent::on_listView_doubleClicked(const QModelIndex &index)
         for (auto i = startIndex; i <= startIndex + numberOfRows; ++i) {
             auto idx = model->index(i, 0);
             auto data = model->data(idx).toString();
-            items.append(new QStandardItem(data));
+            items->append(new QStandardItem(data));
         }
-        emit contextTaskDone(std::move(items));
+        emit contextTaskDone(items);
     };
-    tasks.push_back(std::thread(context_isolate_func, 10));
+    tasks.push_back(std::thread(context_isolate_func, 15));
 }
 
-void TabContent::createContextView(const QList<QStandardItem *> items)
+void TabContent::createContextView(const QList<QStandardItem *> *items)
 {
-    auto context = std::make_unique<QStandardItemModel>(this);
-    context->appendRow(items);
-    auto context_view = std::make_unique<ContextWindow>(parentWindow, std::move(context));
+    auto context = std::make_unique<QStandardItemModel>();
+    for (auto &item : *items)
+        context->appendRow(item);
+    auto context_view = new ContextWindow(nullptr, std::move(context));
     context_view->show();
 }
 
@@ -192,10 +184,13 @@ void TabContent::settingsChanged(std::shared_ptr<Settings> settings)
 
 void TabContent::initViewer()
 {
+    if (view_initialized)
+        return;
     proxyModel->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
     proxyModel->setSourceModel(model.get());
-    ui->logEntries->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->logEntries->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeMode::Fixed);
     ui->logEntries->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->logEntries->horizontalHeader()->setDefaultSectionSize(20000);
     ui->logEntries->verticalHeader()->hide();
     ui->logEntries->horizontalHeader()->hide();
     ui->logEntries->setShowGrid(false);
@@ -203,4 +198,14 @@ void TabContent::initViewer()
     ui->logEntries->setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);
     ui->logEntries->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerItem);
     ui->logEntries->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    auto scroll_func = [](QAbstractItemView *listView, const bool &scrollToBottom, std::atomic_bool &cancellation_token) {
+        while (!cancellation_token) {
+            if (scrollToBottom)
+                listView->scrollToBottom();
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        }
+    };
+    scroll_task = std::thread(scroll_func, ui->logEntries, std::ref(scrollToBottom), std::ref(cancellation_token));
+    view_initialized = true;
 }

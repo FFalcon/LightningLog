@@ -22,28 +22,32 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         if (pages.find(index) != pages.end()) {
             auto ptr = std::move(pages[index]);
             auto tab = (TabContent *) ptr.get();
-            tab->loadProgressed(100);
+            tab->loadProgressed(tab->getFilename(), 100);
             pages.erase(index);
         }
     });
     readSettings();
 }
 
-void MainWindow::loadFile(std::string filename) {
-  qDebug() << "Loading file: " << QString::fromStdString(filename);
-  auto tabContent = std::make_unique<TabContent>(this, global_settings);
-  tabContent->setContent(filename);
-  connect(tabContent.get(), &TabContent::loadProgressed, [=](int progress) {
-      if (progress < 99) {
-          ui->statusbar->showMessage(QString("Loading File: ") + QString::fromStdString(filename), 1000);
-          progressBar->show();
-          progressBar->setRange(0, 100);
-          progressBar->setValue(progress);
-      } else {
-          progressBar->hide();
-      }
-  });
-  addTab(std::move(tabContent), filename);
+void MainWindow::loadFile(QString filename)
+{
+    qDebug() << "Loading file: " << filename;
+    auto tabContent = std::make_unique<TabContent>(this, global_settings);
+    tabContent->setContent(filename);
+    connect(tabContent.get(), &TabContent::loadProgressed, [=](QString _filename, int progress) {
+        auto currentTab = (TabContent *) ui->fileViewTabWidget->currentWidget();
+        if (!currentTab || currentTab->getFilename() != _filename)
+            return;
+        if (progress < 99) {
+            ui->statusbar->showMessage(QString("Loading File: ").append(filename), 1000);
+            progressBar->show();
+            progressBar->setRange(0, 100);
+            progressBar->setValue(progress);
+        } else {
+            progressBar->hide();
+        }
+    });
+    addTab(std::move(tabContent), filename);
 }
 
 MainWindow::~MainWindow()
@@ -67,7 +71,7 @@ void MainWindow::dropEvent(QDropEvent *event) {
 
     // call a function to open the files
     for (auto path : pathList) {
-      loadFile(path.toStdString());
+        loadFile(path);
     }
   }
 }
@@ -78,7 +82,8 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event) {
 
 void MainWindow::readSettings()
 {
-    QSettings settings(QCoreApplication::applicationDirPath() + "lightninglog.conf", QSettings::IniFormat);
+    qDebug() << QCoreApplication::applicationDirPath();
+    QSettings settings(QCoreApplication::applicationDirPath().append("\\").append(SETTINGS_FILENAME), QSettings::IniFormat);
 
     settings.beginGroup("NormalMode");
     QMap<QString, FilterOptions> *normalModeFilterMap = new QMap<QString, FilterOptions>();
@@ -108,30 +113,30 @@ void MainWindow::readSettings()
     emit settingsChanged(global_settings);
 }
 
-void MainWindow::addTab(std::unique_ptr<QWidget> widget, std::string title,
-                        bool autoSwitch) {
-  if (widget) {
-    unsigned index = ui->fileViewTabWidget->addTab(
-        widget.get(), QString::fromStdString(title));
-    pages.insert(std::make_pair(index, std::move(widget)));
-    if (autoSwitch)
-      ui->fileViewTabWidget->setCurrentIndex(index);
-  }
+void MainWindow::addTab(std::unique_ptr<QWidget> widget, QString title, bool autoSwitch)
+{
+    if (widget) {
+        unsigned index = ui->fileViewTabWidget->addTab(widget.get(), title);
+        pages.insert(std::make_pair(index, std::move(widget)));
+        if (autoSwitch)
+            ui->fileViewTabWidget->setCurrentIndex(index);
+    }
 }
 
 void MainWindow::writeSettings()
 {
-    QSettings settings(QCoreApplication::applicationDirPath() + "lightninglog.conf", QSettings::IniFormat);
+    QSettings settings(QCoreApplication::applicationDirPath().append("\\").append(SETTINGS_FILENAME), QSettings::IniFormat);
     settings.beginGroup("NormalMode");
 
     settings.endGroup();
 }
 
-void MainWindow::on_actionOpen_triggered() {
-  QString filename = QFileDialog::getOpenFileName(this, tr("Choose file"), "/",
-                                                  tr("All files (*.*)"));
-  if (!filename.isEmpty())
-    loadFile(filename.toStdString());
+void MainWindow::on_actionOpen_triggered()
+{
+    auto filenames = QFileDialog::getOpenFileNames(this, tr("Choose file"), "/", tr("All files (*.*)"), nullptr);
+    if (!filenames.isEmpty())
+        for (auto &filename : filenames)
+            loadFile(filename);
 }
 
 void MainWindow::on_fileViewTabWidget_tabCloseRequested(int index) {

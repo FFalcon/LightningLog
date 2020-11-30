@@ -1,24 +1,24 @@
 #include "filereadertask.h"
 
-FileReaderTask::FileReaderTask(std::string _filename,
-                               std::shared_ptr<Settings> _settings,
-                               std::atomic_bool &_cancellation_token)
-    : QObject(), filename(_filename), cancellation_token(_cancellation_token),
-      settings(_settings) {}
+FileReaderTask::FileReaderTask(std::string _filename, std::shared_ptr<Settings> _settings, std::atomic_bool &_cancellation_token)
+    : QObject(), filename(_filename), cancellation_token(_cancellation_token), settings(_settings)
+{
+    initial_load = true;
+}
 
 bool FileReaderTask::fileChanged(std::streampos posg)
 {
     auto now = std::chrono::system_clock::now();
     auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_file_refresh).count();
-    if (delta < 1000)
+    if (delta < 250)
         return false;
     last_file_refresh = now;
 
-    std::ifstream fs(filename, std::ios::binary);
+    std::ifstream fs(filename, std::ios::in);
     if (fs.is_open()) {
         fs.seekg(0, std::ios::end);
         auto eof = fs.tellg();
-        if (posg > eof)
+        if (posg != eof)
             return true;
         return false;
     }
@@ -39,7 +39,7 @@ void FileReaderTask::run() {
         std::string line;
         auto gpos = ifs.tellg();
         while (!cancellation_token) {
-            if (fileChanged(gpos)) {
+            if (!initial_load && fileChanged(gpos)) {
                 emit fileWillReload();
                 std::cout << "File changed, will reload" << std::endl;
                 ifs.close();
@@ -52,6 +52,7 @@ void FileReaderTask::run() {
                     gpos = ifs.tellg();
                 } else {
                     std::cout << "Couldn't open file" << std::endl;
+                    break;
                 }
             }
 
@@ -59,6 +60,7 @@ void FileReaderTask::run() {
                 if (initial_load) {
                     initial_load = false;
                     emit initialLoadFinished();
+                    continue;
                 }
                 ifs.clear();
                 ifs.seekg(gpos);
@@ -70,7 +72,7 @@ void FileReaderTask::run() {
             if (initial_load) {
                 progress = gpos * 100 / file_size;
                 if (progress % 2 == 0)
-                    emit loadProgressed(progress);
+                    emit loadProgressed(QString::fromStdString(filename), progress);
             }
 
             if (settings != nullptr && settings->getNormalModeFilters() != nullptr) {
@@ -95,7 +97,5 @@ void FileReaderTask::run() {
             }
             emit newItemCreated(new QStandardItem(QString::fromStdString(line)));
         }
-
-        emit loadProgressed(200); // avoid hanging progressBar on interrupt while loading
     }
 }
