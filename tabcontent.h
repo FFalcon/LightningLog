@@ -10,6 +10,7 @@
 #include <QWidget>
 
 namespace Ui {
+class MainWindow;
 class TabContent;
 }
 

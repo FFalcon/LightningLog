@@ -21,6 +21,7 @@
 
 QWidget
 {
+font-family: &quot;Cascadia Code&quot;;
     color: #DDDDDD;
     background-color: #222222;
 }

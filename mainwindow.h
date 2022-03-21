@@ -3,6 +3,7 @@
 
 #include "options.h"
 #include <iostream>
+#include <QCompleter>
 #include <QDebug>
 #include <QDropEvent>
 #include <QLabel>
@@ -10,12 +11,15 @@
 #include <QMimeData>
 #include <QProgressBar>
 #include <QSettings>
+#include <QStringListModel>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
 }
 QT_END_NAMESPACE
+
+class TabContent;
 
 class MainWindow : public QMainWindow
 {
@@ -27,7 +31,9 @@ public:
 
     void loadFile(QString filename);
     std::shared_ptr<Settings> getGlobalSettings() const { return global_settings; }
-    void addTab(std::unique_ptr<QWidget> widget, QString title, bool autoSwitch = true);
+    QCompleter *getCompleter() { return completer; }
+    void addCompleterString(QString filter);
+    void addTab(std::unique_ptr<TabContent> widget, QString title, bool autoSwitch = true);
 
     void readSettings();
     void writeSettings();
@@ -52,6 +58,8 @@ private:
     QProgressBar *progressBar;
     QLabel *label;
     std::shared_ptr<Settings> global_settings;
-    std::unordered_map<unsigned int, std::unique_ptr<QWidget>> pages;
+    std::unordered_map<unsigned int, std::unique_ptr<TabContent>> pages;
+    QCompleter *completer;
+    QStringListModel *listModel;
 };
 #endif // MAINWINDOW_H

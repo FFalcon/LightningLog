@@ -21,6 +21,7 @@
 
 QWidget
 {
+font-family: &quot;Cascadia Code&quot;;
     color: #DDDDDD;
     background-color: #222222;
 }
@@ -591,7 +592,7 @@ QHeaderView::section:checked {
 
 /* =============================================== */
 /* QTableWidget                                    */
-/* =============================================== */
+/* ===============================================
 QTableWidget, QTableView
 {
     gridline-color: #353535;
@@ -624,7 +625,7 @@ QTableWidget QComboBox{
     margin: 2px;
     border: none;
 }
-</string>
+*/</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
    <property name="leftMargin">

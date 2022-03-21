@@ -7,6 +7,10 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), global_settings(std::make_shared<Settings>())
 {
     ui->setupUi(this);
+
+    listModel = new QStringListModel(QStringList());
+    completer = new QCompleter(listModel);
+
     progressBar = new QProgressBar(ui->statusbar);
     progressBar->setHidden(true);
     progressBar->setRange(0, 0);
@@ -16,17 +20,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     label->setHidden(true);
     ui->statusbar->addWidget(label);
 
+    readSettings();
+
     ui->fileViewTabWidget->clear();
     ui->fileViewTabWidget->setTabsClosable(true);
     connect(ui->fileViewTabWidget, &QTabWidget::tabCloseRequested, [&](int index) {
         if (pages.find(index) != pages.end()) {
             auto ptr = std::move(pages[index]);
-            auto tab = (TabContent *) ptr.get();
+            auto tab = ptr.get();
             tab->loadProgressed(tab->getFilename(), 100);
             pages.erase(index);
         }
     });
-    readSettings();
 }
 
 void MainWindow::loadFile(QString filename)
@@ -52,6 +57,8 @@ void MainWindow::loadFile(QString filename)
 
 MainWindow::~MainWindow()
 {
+    delete completer;
+    delete listModel;
     delete label;
     delete progressBar;
     delete ui;
@@ -85,11 +92,16 @@ void MainWindow::readSettings()
     qDebug() << QCoreApplication::applicationDirPath();
     QSettings settings(QCoreApplication::applicationDirPath().append("\\").append(SETTINGS_FILENAME), QSettings::IniFormat);
 
+    settings.beginGroup("SearchFilterHistory");
+    auto list = settings.value("filter").value<QStringList>();
+    listModel->setStringList(list);
+    settings.endGroup();
+
     settings.beginGroup("NormalMode");
     QMap<QString, FilterOptions> *normalModeFilterMap = new QMap<QString, FilterOptions>();
     auto nitems = settings.value("nitems").value<int>();
     for (auto i = 0; i < nitems; i++) {
-        QString raw_entry = settings.value(QString("item") + QString(i)).value<QString>();
+        QString raw_entry = settings.value(QString("item") + QString::number(i)).value<QString>();
         auto entry_splits = raw_entry.split("|");
         if (entry_splits.size() != 6)
             continue;
@@ -113,14 +125,20 @@ void MainWindow::readSettings()
     emit settingsChanged(global_settings);
 }
 
-void MainWindow::addTab(std::unique_ptr<QWidget> widget, QString title, bool autoSwitch)
+void MainWindow::addTab(std::unique_ptr<TabContent> widget, QString title, bool autoSwitch)
 {
     if (widget) {
-        unsigned index = ui->fileViewTabWidget->addTab(widget.get(), title);
+        unsigned index = ui->fileViewTabWidget->addTab((QWidget *) widget.get(), title);
         pages.insert(std::make_pair(index, std::move(widget)));
         if (autoSwitch)
             ui->fileViewTabWidget->setCurrentIndex(index);
     }
+}
+
+void MainWindow::addCompleterString(QString filter)
+{
+    qDebug() << listModel->stringList();
+    listModel->setStringList(listModel->stringList() << filter);
 }
 
 void MainWindow::writeSettings()

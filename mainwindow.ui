@@ -12,8 +12,8 @@
   </property>
   <property name="font">
    <font>
-    <family>Poppins</family>
-    <pointsize>8</pointsize>
+    <family>Cascadia Code</family>
+    <pointsize>9</pointsize>
     <weight>50</weight>
     <italic>false</italic>
     <bold>false</bold>
@@ -33,6 +33,8 @@
 
 QWidget
 {
+	font-family: &quot;Cascadia Code&quot;;
+	font: 9pt &quot;Cascadia Code&quot;;
     color: #DDDDDD;
     background-color: #222222;
 }
@@ -716,7 +718,7 @@ QTableWidget QComboBox{
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>17</height>
+     <height>18</height>
     </rect>
    </property>
    <property name="styleSheet">

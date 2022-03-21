@@ -107,11 +107,8 @@ void TabContent::on_lineEdit_returnPressed()
 {
     auto text = ui->lineEdit->text();
     std::cout << "Filter: " << text.toStdString() << std::endl;
-    if (text.isEmpty()) {
-        proxyModel->setFilterFixedString(text);
-        return;
-    }
     proxyModel->setFilterFixedString(text);
+    parentWindow->addCompleterString(text);
 }
 
 void TabContent::on_isolateSelection_clicked()
@@ -121,10 +118,24 @@ void TabContent::on_isolateSelection_clicked()
         for (auto i = 0; i < proxyModel->rowCount(); i++) {
             auto idx = proxyModel->index(i, 0);
             auto item = new QStandardItem();
-            item->setData(proxyModel->data(idx).toString(), Qt::DisplayRole);
-            item->setData(proxyModel->data(idx, Qt::FontRole).value<QFont>(), Qt::FontRole);
-            item->setForeground(proxyModel->data(idx, Qt::ForegroundRole).value<QBrush>());
-            item->setBackground(proxyModel->data(idx, Qt::BackgroundRole).value<QBrush>());
+            auto item_data = proxyModel->itemData(idx);
+
+            for (auto it = item_data.begin(); it != item_data.end(); it++) {
+                item->setData(it.value(), it.key());
+            }
+
+            //            auto text = proxyModel->data(idx).toString();
+            //            auto font = proxyModel->data(idx, Qt::FontRole);
+            //            auto foreground = proxyModel->data(idx, Qt::ForegroundRole);
+            //            auto background = proxyModel->data(idx, Qt::BackgroundRole);
+
+            //            item->setData(text, Qt::DisplayRole);
+            //            if (font.canConvert<QFont>())
+            //                item->setData(font.value<QFont>(), Qt::FontRole);
+            //            if (foreground.canConvert<QBrush>())
+            //                item->setForeground(foreground.value<QBrush>());
+            //            if (background.canConvert<QBrush>())
+            //                item->setBackground(background.value<QBrush>());
             items->append(item);
         }
 
@@ -165,7 +176,7 @@ void TabContent::logEntryDoubleClicked(const QModelIndex &index)
         }
         emit contextTaskDone(items);
     };
-    tasks.push_back(std::thread(context_isolate_func, 15));
+    tasks.push_back(std::thread(context_isolate_func, 200));
 }
 
 void TabContent::createContextView(const QList<QStandardItem *> *items)
@@ -199,6 +210,18 @@ void TabContent::initViewer()
     ui->logEntries->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerItem);
     ui->logEntries->setEditTriggers(QAbstractItemView::NoEditTriggers);
     //    ui->logEntries->setItemDelegate(new CustomDisplayDelegate);
+
+    ui->lineEdit->setCompleter(parentWindow->getCompleter());
+
+    connect(ui->logEntries->selectionModel(), &QItemSelectionModel::selectionChanged, [&](const QItemSelection &selected) {
+        if (selected.isEmpty())
+            return;
+        auto last_range = selected.back();
+        auto last_item = last_range.bottom();
+        auto last_index = proxyModel->index(last_item, 0);
+        auto item = proxyModel->data(last_index);
+        ui->lineView->setPlainText(item.toString());
+    });
 
     auto scroll_func = [](QAbstractItemView *listView, const bool &scrollToBottom, std::atomic_bool &cancellation_token) {
         while (!cancellation_token) {

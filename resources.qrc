@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>icons/icon.png</file>
         <file>icons/lightninglog.png</file>
+        <file>fonts/CascadiaCode.ttf</file>
+        <file>icons/icon.ico</file>
     </qresource>
 </RCC>

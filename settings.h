@@ -14,6 +14,15 @@ typedef struct FilterOptions
     bool isCaseInsensitive;
 } FilterOptions;
 
+class Profile
+{
+private:
+    QString profile_name;
+    QVector<QString> *profile_trigger_filenames;
+    QString profile_regex;
+    QMap<QString, FilterOptions> *normal_mode_filters = nullptr;
+};
+
 class Settings {
 public:
     void setNormalModeFilters(QMap<QString, FilterOptions> *filters) { normalModeFilters = filters; }

@@ -20,7 +20,7 @@ void Options::loadSettings()
     settings.beginGroup("NormalMode");
     auto nitems = settings.value("nitems").value<int>();
     for (auto i = 0; i < nitems; i++) {
-        QString raw_entry = settings.value(QString("item") + QString(i)).value<QString>();
+        QString raw_entry = settings.value(QString("item") + QString::number(i)).value<QString>();
         auto entry_splits = raw_entry.split("|");
         if (entry_splits.size() != 6)
             continue;
@@ -71,24 +71,22 @@ void Options::on_saveBtn_clicked()
         value += QString("italic=") + (it.value().isItalic ? "true" : "false");
         value += "|";
         value += QString("caseSensitive=") + (it.value().isCaseInsensitive ? "true" : "false");
-        settings.setValue(QString("item") + QString(idx), value);
+        settings.setValue(QString("item") + QString::number(idx), value);
     }
     settings.endGroup();
     accept();
 }
 
-void Options::on_frontColorBtn_clicked() {
-  currentFilterOptions.frontColor =
-      QColorDialog::getColor(Qt::black, this, tr("Choose Foreground color"));
-  ui->frontColorBtn->setStyleSheet("background-color: " +
-                                   currentFilterOptions.frontColor.name());
+void Options::on_frontColorBtn_clicked()
+{
+    currentFilterOptions.frontColor = QColorDialog::getColor(Qt::black, this, tr("Choose Foreground color"));
+    ui->previewLabel->setStyleSheet("background-color:" + currentFilterOptions.backColor.name() + ";color:" + currentFilterOptions.frontColor.name());
 }
 
-void Options::on_backColorBtn_clicked() {
-  currentFilterOptions.backColor =
-      QColorDialog::getColor(Qt::white, this, tr("Choose Background color"));
-  ui->backColorBtn->setStyleSheet("background-color: " +
-                                  currentFilterOptions.backColor.name());
+void Options::on_backColorBtn_clicked()
+{
+    currentFilterOptions.backColor = QColorDialog::getColor(Qt::white, this, tr("Choose Background color"));
+    ui->previewLabel->setStyleSheet("background-color:" + currentFilterOptions.backColor.name() + ";color:" + currentFilterOptions.frontColor.name());
 }
 
 void Options::on_ignoreCase_stateChanged(int state) {
