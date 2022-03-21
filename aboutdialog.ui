@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>381</width>
-    <height>176</height>
+    <height>180</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -700,7 +700,7 @@ QTableWidget QComboBox{
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Version: v0.1.0-Alpha</string>
+          <string>Version: v0.2.0-Alpha</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -732,7 +732,7 @@ QTableWidget QComboBox{
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Release date: Dec 2020</string>
+          <string>Release date: MAR 2022</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>

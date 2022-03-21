@@ -22,20 +22,14 @@ public:
 private slots:
     void on_cancelBtn_clicked();
     void on_saveBtn_clicked();
-
     void on_frontColorBtn_clicked();
-
     void on_backColorBtn_clicked();
-
     void on_ignoreCase_stateChanged(int arg1);
-
     void on_bold_stateChanged(int arg1);
-
     void on_italic_stateChanged(int arg1);
-
     void on_addBtn_clicked();
-
     void on_deleteBtn_clicked();
+    void on_listWidget_doubleClicked();
 
 private:
     Ui::Options *ui;

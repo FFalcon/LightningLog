@@ -10,6 +10,9 @@ QMAKE_LFLAGS += -static -static-libgcc -static-libstdc++ -lpthread
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
+DEFINES += QAPPLICATION_CLASS=QApplication
+
+include(singleapplication/singleapplication.pri)
 
 SOURCES += \
     aboutdialog.cpp \
@@ -18,6 +21,7 @@ SOURCES += \
     filereadertask.cpp \
     main.cpp \
     mainwindow.cpp \
+    messagereceiver.cpp \
     options.cpp \
     tabcontent.cpp
 
@@ -27,6 +31,7 @@ HEADERS += \
     customdisplaydelegate.h \
     filereadertask.h \
     mainwindow.h \
+    messagereceiver.h \
     options.h \
     settings.h \
     tabcontent.h \

@@ -127,8 +127,26 @@ void Options::on_addBtn_clicked() {
 void Options::on_deleteBtn_clicked() {
   auto selectedWidgets = ui->listWidget->selectedItems();
   for (auto item : selectedWidgets) {
-    auto key = item->data(Qt::DisplayRole).value<QString>();
-    normalModeFilterMap->remove(key);
+      auto key = item->data(Qt::DisplayRole).toString();
+      normalModeFilterMap->remove(key);
   }
   qDeleteAll(ui->listWidget->selectedItems());
+}
+
+void Options::on_listWidget_doubleClicked()
+{
+    auto selectedLine = ui->listWidget->selectedItems()[0];
+    auto listText = selectedLine->data(Qt::DisplayRole).toString();
+    auto filterOption = normalModeFilterMap->find(listText).value();
+    currentFilterOptions = filterOption;
+
+    ui->filterText->setText(listText);
+    ui->previewLabel->setStyleSheet("background-color:" + currentFilterOptions.backColor.name() + ";color:" + currentFilterOptions.frontColor.name());
+    ui->previewLabel->setStyleSheet("background-color:" + currentFilterOptions.backColor.name() + ";color:" + currentFilterOptions.frontColor.name());
+    ui->bold->setChecked(currentFilterOptions.isBold);
+    ui->ignoreCase->setChecked(currentFilterOptions.isCaseInsensitive);
+    ui->italic->setChecked(currentFilterOptions.isItalic);
+
+    normalModeFilterMap->remove(listText);
+    qDeleteAll(ui->listWidget->selectedItems());
 }
