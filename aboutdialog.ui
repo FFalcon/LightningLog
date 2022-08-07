@@ -700,7 +700,7 @@ QTableWidget QComboBox{
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Version: v0.2.0-Alpha</string>
+          <string>Version: v0.3.0-Alpha</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -732,7 +732,7 @@ QTableWidget QComboBox{
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Release date: MAR 2022</string>
+          <string>Release date: AUG 2022</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>

@@ -33,69 +33,58 @@ auto getFileSize(std::string filename)
 
 void FileReaderTask::run() {
     auto progress = 0;
-    auto file_size = getFileSize(filename);
-    std::ifstream ifs(filename, std::ios::in);
-    if (ifs.is_open()) {
-        std::string line;
-        auto gpos = ifs.tellg();
-        while (!cancellation_token) {
-            if (!initial_load && fileChanged(gpos)) {
-                emit fileWillReload();
-                std::cout << "File changed, will reload" << std::endl;
-                ifs.close();
-                ifs.open(filename, std::ios::in);
-                if (ifs.is_open()) {
-                    initial_load = true;
-                    progress = 0;
-                    file_size = getFileSize(filename);
-                    ifs.seekg(0, std::ios::beg);
-                    gpos = ifs.tellg();
-                } else {
-                    std::cout << "Couldn't open file" << std::endl;
-                    break;
-                }
-            }
+    auto *fileReader = new WindowsFileReader(filename);
 
-            if (!std::getline(ifs, line)) {
-                if (initial_load) {
-                    initial_load = false;
-                    emit initialLoadFinished();
-                    continue;
-                }
-                ifs.clear();
-                ifs.seekg(gpos);
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::string line;
+    while (!cancellation_token) {
+        if (!initial_load && fileReader->didFileChange()) {
+            emit fileWillReload();
+            std::cout << "File changed, will reload" << std::endl;
+            fileReader->reload();
+            initial_load = true;
+            progress = 0;
+        }
+
+        if (!fileReader->getLine(line)) {
+            if (initial_load) {
+                initial_load = false;
+                emit initialLoadFinished();
                 continue;
             }
-            gpos = ifs.tellg();
-
-            if (initial_load) {
-                progress = gpos * 100 / file_size;
-                if (progress % 2 == 0)
-                    emit loadProgressed(QString::fromStdString(filename), progress);
-            }
-
-            if (settings != nullptr && settings->getNormalModeFilters() != nullptr) {
-                FilterOptions *usedFilter = nullptr;
-                auto filtersMap = settings->getNormalModeFilters();
-                for (auto key : filtersMap->keys()) {
-                    auto stdStr = key.toStdString();
-                    auto found = std::search(line.begin(), line.end(), stdStr.begin(), stdStr.end()) != line.end();
-                    if (found)
-                        usedFilter = &(*filtersMap)[key];
-                }
-
-                if (usedFilter != nullptr) {
-                    auto item = new QStandardItem();
-                    item->setData(QString::fromStdString(line), Qt::DisplayRole);
-                    item->setData(QFont("Cascadia Code", -1, usedFilter->isBold ? QFont::Bold : QFont::Normal, usedFilter->isItalic), Qt::FontRole);
-                    item->setForeground(QBrush(usedFilter->frontColor));
-                    item->setBackground(QBrush(usedFilter->backColor));
-                    emit newItemCreated(item);
-                    continue;
-                }
-            }
-            emit newItemCreated(new QStandardItem(QString::fromStdString(line)));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
         }
+        auto gpos = fileReader->tell();
+        auto file_size = fileReader->getFileSize();
+
+        if (initial_load && fileReader->opened()) {
+            progress = gpos * 100 / file_size;
+            if (progress % 20 == 0)
+                emit loadProgressed(QString::fromStdString(filename), progress);
+        }
+
+        if (settings != nullptr && settings->getNormalModeFilters() != nullptr) {
+            FilterOptions *usedFilter = nullptr;
+            auto filtersMap = settings->getNormalModeFilters();
+            for (auto key : filtersMap->keys()) {
+                auto stdStr = key.toStdString();
+                auto found = std::search(line.begin(), line.end(), stdStr.begin(), stdStr.end()) != line.end();
+                if (found)
+                    usedFilter = &(*filtersMap)[key];
+            }
+
+            if (usedFilter != nullptr) {
+                auto item = new QStandardItem();
+                item->setData(QString::fromStdString(line), Qt::DisplayRole);
+                item->setData(QFont("Cascadia Code", -1, usedFilter->isBold ? QFont::Bold : QFont::Normal, usedFilter->isItalic), Qt::FontRole);
+                item->setForeground(QBrush(usedFilter->frontColor));
+                item->setBackground(QBrush(usedFilter->backColor));
+                emit newItemCreated(item);
+                continue;
+            }
+        }
+        emit newItemCreated(new QStandardItem(QString::fromStdString(line)));
     }
+
+    delete fileReader;
 }
